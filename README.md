@@ -3,6 +3,10 @@ This mod unlocks the ability to execute Luau code directly within Gorilla Tag. I
 
 The [documentation]() can be viewed here.
 
+# Requirements
+- [Utilla](https://github.com/developer9998/Utilla)
+- [BepInEx](https://github.com/BepInEx/BepInEx)
+
 # Features
 - Execute Luau code directly in Gorilla Tag
 - Uses only native Gorilla Tag functions
