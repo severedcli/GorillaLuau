@@ -12,6 +12,7 @@ The [documentation]() can be viewed here.
 # Roadmap
 - Add a mini-IDE
 - Figure out why it crashes if you don't `Debug.Log` inside of `runCode`
+- Auto load script support
 
 # Legal
 This project is not affiliated with, endorsed by, or associated with Gorilla Tag or Another Axiom LLC or any of its developers. All trademarks, logos, and brand names are the property of their respective owners. This mod is an independent project made solely for educational and entertainment purposes.
