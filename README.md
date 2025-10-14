@@ -1,2 +1,2 @@
 # GorillaLuau
-Gorilla Tag Luau Executor Mod
+This mod unlocks the ability to execute Luau code directly within Gorilla Tag. It leverages native functions from the game itself there are no other DLLs used. This functionality is made possible because Gorilla Tag now supports custom maps by default. If that support is ever removed, this mod will likely no longer work or be maintained. I plan to keep the mod updated and fix any major issues that arise, though I can’t guarantee rapid updates.
