@@ -18,20 +18,27 @@ namespace GorillaLuau.Lua
             foreach (GameObject go in UnityEngine.Object.FindObjectsOfType<GameObject>())
             {
                 if (!GameObjectsRegistry.ContainsKey(go.name))
-                {
                     GameObjectsRegistry[go.name] = go;
-                }
             }
         }
+
         public static int GetObject(lua_State* state)
         {
             string name = Marshal.PtrToStringAnsi((IntPtr)Luau.lua_tolstring(state, 1, null));
-            if (GameObjectsRegistry.TryGetValue(name, out GameObject obj))
+            if (string.IsNullOrEmpty(name))
             {
-                Helper.PushGameObject(state, obj);
+                myLogger.LogError("GetObject: invalid or missing name");
+                Luau.lua_pushnil(state);
+                return 1;
+            }
+
+            if (GameObjectsRegistry.TryGetValue(name, out GameObject obj) && obj != null)
+            {
+                Helper.PushObject(state, obj);
             }
             else
             {
+                myLogger.LogError($"GameObject '{name}' not found");
                 Luau.lua_pushnil(state);
             }
 
@@ -40,7 +47,8 @@ namespace GorillaLuau.Lua
 
         public static int GetComponent(lua_State* state)
         {
-            GameObject obj = Helper.CheckGameObject(state, 1);
+            UnityEngine.Object uObj = Helper.CheckObject(state, 1);
+            GameObject obj = uObj as GameObject;
             if (obj == null)
             {
                 myLogger.LogError("`GetComponent` called on null object");
@@ -49,6 +57,13 @@ namespace GorillaLuau.Lua
             }
 
             string typeName = Marshal.PtrToStringAnsi((nint)Luau.lua_tolstring(state, 2, null));
+            if (string.IsNullOrEmpty(typeName))
+            {
+                myLogger.LogError("GetComponent: missing type name");
+                Luau.lua_pushnil(state);
+                return 1;
+            }
+
             Type type = null;
             foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
             {
@@ -65,7 +80,7 @@ namespace GorillaLuau.Lua
 
             Component comp = obj.GetComponent(type);
             if (comp != null)
-                Helper.PushComponent(state, comp);
+                Helper.PushObject(state, comp);
             else
                 Luau.lua_pushnil(state);
 
@@ -186,7 +201,8 @@ namespace GorillaLuau.Lua
                     Type type = assembly.GetType(typeName);
                     if (type != null)
                     {
-                        IntPtr ptr = Marshal.GetIUnknownForObject(type);
+                        GCHandle handle = GCHandle.Alloc(type, GCHandleType.Normal);
+                        IntPtr ptr = GCHandle.ToIntPtr(handle);
                         Luau.lua_pushlightuserdatatagged(state, (void*)ptr, 0);
                         return 1;
                     }

@@ -8,77 +8,63 @@ namespace GorillaLuau.Lua
 {
     public unsafe class Helper
     {
-        public static unsafe void PushGameObject(lua_State* state, GameObject obj)
+        public static void PushObject(lua_State* state, UnityEngine.Object obj)
         {
-            IntPtr ptr = Marshal.GetIUnknownForObject(obj);
-            Luau.lua_pushlightuserdatatagged(state, (void*)ptr, 0);
+            int id = ObjectRegistry.Register(obj);
+            Luau.lua_pushnumber(state, id);
         }
 
-        public static unsafe GameObject CheckGameObject(lua_State* state, int index)
+        public static UnityEngine.Object CheckObject(lua_State* state, int index)
         {
-            void* ptr = Luau.lua_touserdata(state, index);
-            if (ptr == null) return null;
-            return Marshal.GetObjectForIUnknown((IntPtr)ptr) as GameObject;
+            int id = (int)Luau.lua_tonumber(state, index);
+            return ObjectRegistry.Get(id);
         }
 
-        public static unsafe void PushComponent(lua_State* state, Component comp)
-        {
-            IntPtr ptr = Marshal.GetIUnknownForObject(comp);
-            Luau.lua_pushlightuserdatatagged(state, (void*)ptr, 0);
-        }
-
-        public static unsafe object CheckObject(lua_State* state, int index)
-        {
-            void* ptr = Luau.lua_touserdata(state, index);
-            if (ptr == null) return null;
-            return Marshal.GetObjectForIUnknown((IntPtr)ptr);
-        }
-
-        public static unsafe void PushObject(lua_State* L, UnityEngine.Object obj)
-        {
-            IntPtr ptr = Marshal.GetIUnknownForObject(obj);
-            Luau.lua_pushlightuserdatatagged(L, (void*)ptr, 0);
-        }
-
-        public static void PushValue(lua_State* L, object value)
+        public static void PushValue(lua_State* state, object value)
         {
             if (value == null)
-                Luau.lua_pushnil(L);
-            else if (value is int i)
-                Luau.lua_pushnumber(L, i);
-            else if (value is float f)
-                Luau.lua_pushnumber(L, f);
-            else if (value is double d)
-                Luau.lua_pushnumber(L, d);
-            else if (value is bool b)
-                Luau.lua_pushboolean(L, b ? 1 : 0);
-            else if (value is string s)
-                Luau.lua_pushstring(L, s);
-            else if (value is Vector3 v)
             {
-                Luau.lua_createtable(L, 0, 3);
-                Luau.lua_pushnumber(L, v.x); Luau.lua_setfield(L, -2, "x");
-                Luau.lua_pushnumber(L, v.y); Luau.lua_setfield(L, -2, "y");
-                Luau.lua_pushnumber(L, v.z); Luau.lua_setfield(L, -2, "z");
+                Luau.lua_pushnil(state);
+                return;
             }
-            else if (value is Color c)
+
+            switch (value)
             {
-                Luau.lua_createtable(L, 0, 4);
-                Luau.lua_pushnumber(L, c.r); Luau.lua_setfield(L, -2, "r");
-                Luau.lua_pushnumber(L, c.g); Luau.lua_setfield(L, -2, "g");
-                Luau.lua_pushnumber(L, c.b); Luau.lua_setfield(L, -2, "b");
-                Luau.lua_pushnumber(L, c.a); Luau.lua_setfield(L, -2, "a");
-            }
-            else if (value is GameObject go)
-                PushGameObject(L, go);
-            else if (value is Component comp)
-                PushComponent(L, comp);
-            else if (value is Material mat)
-                PushObject(L, mat);
-            else
-            {
-                myLogger.LogError($"Unsupported type for Lua push: {value.GetType()}");
-                Luau.lua_pushstring(L, value.ToString());
+                case int i:
+                    Luau.lua_pushnumber(state, i);
+                    break;
+                case float f:
+                    Luau.lua_pushnumber(state, f);
+                    break;
+                case double d:
+                    Luau.lua_pushnumber(state, d);
+                    break;
+                case bool b:
+                    Luau.lua_pushboolean(state, b ? 1 : 0);
+                    break;
+                case string s:
+                    Luau.lua_pushstring(state, s);
+                    break;
+                case Vector3 v:
+                    Luau.lua_createtable(state, 0, 3);
+                    Luau.lua_pushnumber(state, v.x); Luau.lua_setfield(state, -2, "x");
+                    Luau.lua_pushnumber(state, v.y); Luau.lua_setfield(state, -2, "y");
+                    Luau.lua_pushnumber(state, v.z); Luau.lua_setfield(state, -2, "z");
+                    break;
+                case Color c:
+                    Luau.lua_createtable(state, 0, 4);
+                    Luau.lua_pushnumber(state, c.r); Luau.lua_setfield(state, -2, "r");
+                    Luau.lua_pushnumber(state, c.g); Luau.lua_setfield(state, -2, "g");
+                    Luau.lua_pushnumber(state, c.b); Luau.lua_setfield(state, -2, "b");
+                    Luau.lua_pushnumber(state, c.a); Luau.lua_setfield(state, -2, "a");
+                    break;
+                case UnityEngine.Object uObj:
+                    PushObject(state, uObj);
+                    break;
+                default:
+                    myLogger.LogError($"Unsupported type for Lua push: {value.GetType()}");
+                    Luau.lua_pushstring(state, value.ToString());
+                    break;
             }
         }
 
@@ -249,23 +235,23 @@ namespace GorillaLuau.Lua
             }
         }
 
-        public static object ConvertLuaValue(lua_State* L, int index, Type targetType)
+        public static object ConvertLuaValue(lua_State* state, int index, Type targetType)
         {
-            int type = Luau.lua_type(L, index);
+            int type = Luau.lua_type(state, index);
 
             switch (type)
             {
                 case 0: // LUA_TNIL
                     return null;
                 case 1: // LUA_TBOOLEAN
-                    return Luau.lua_toboolean(L, index) != 0;
+                    return Luau.lua_toboolean(state, index) != 0;
                 case 3: // LUA_TNUMBER
-                    return Luau.lua_tonumber(L, index);
+                    return Luau.lua_tonumber(state, index);
                 case 4: // LUA_TSTRING
-                    sbyte* strPtr = Luau.lua_tostring(L, index);
+                    sbyte* strPtr = Luau.lua_tostring(state, index);
                     return strPtr != null ? Marshal.PtrToStringAnsi((IntPtr)strPtr) : null;
                 case 2: // LUA_TUSERDATA
-                    return CheckObject(L, index);
+                    return CheckObject(state, index);
                 default:
                     return null;
             }

@@ -6,7 +6,7 @@ using GorillaLuau.Lua;
 
 namespace GorillaLuau
 {
-    [BepInPlugin("com.severedcli.gorillaluau", "GorillaLuau", "1.0.0")]
+    [BepInPlugin("com.severedcli.gorillaluau", "GorillaLuau", "1.0.1")]
     [BepInDependency("org.legoandmars.gorillatag.utilla", "1.6.0")]
     [ModdedGamemode]
     public class Plugin : BaseUnityPlugin

@@ -75,29 +75,31 @@ namespace GorillaLuau.Lua
 
                 Luau.lua_pop(state, 1);
                 Luau.lua_close(state);
+
+                ObjectRegistry.Clear();
             }
         }
 
-        public static int print(lua_State* L)
+        public static int print(lua_State* state)
         {
-            int n = Luau.lua_gettop(L);
+            int n = Luau.lua_gettop(state);
             StringBuilder sb = new StringBuilder();
 
             for (int i = 1; i <= n; i++)
             {
-                int type = Luau.lua_type(L, i);
+                int type = Luau.lua_type(state, i);
                 switch (type)
                 {
                     case 5: // LUA_TSTRING
                     case 4: // LUA_TVECTOR (optional)
-                        sbyte* str = Luau.lua_tostring(L, i);
+                        sbyte* str = Luau.lua_tostring(state, i);
                         if (str != null) sb.Append(Marshal.PtrToStringAnsi((IntPtr)str));
                         break;
                     case 3: // LUA_TNUMBER
-                        sb.Append(Luau.lua_tonumber(L, i));
+                        sb.Append(Luau.lua_tonumber(state, i));
                         break;
                     case 1: // LUA_TBOOLEAN
-                        sb.Append(Luau.lua_toboolean(L, i) != 0 ? "true" : "false");
+                        sb.Append(Luau.lua_toboolean(state, i) != 0 ? "true" : "false");
                         break;
                     case 0: // LUA_TNIL
                         sb.Append("nil");
@@ -113,9 +115,9 @@ namespace GorillaLuau.Lua
             return 0;
         }
 
-        public static unsafe string LuaToString(lua_State* L, int index)
+        public static unsafe string LuaToString(lua_State* state, int index)
         {
-            sbyte* ptr = Luau.lua_tostring(L, index);
+            sbyte* ptr = Luau.lua_tostring(state, index);
             if (ptr == null) return null;
             return Marshal.PtrToStringAnsi((IntPtr)ptr);
         }
